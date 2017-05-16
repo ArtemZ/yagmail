@@ -98,7 +98,7 @@ class SMTP():
         """
         self.log = get_logger(log_level, file_path_name)
 
-    def send(self, to=None, subject=None, contents=None, attachments=None, cc=None, bcc=None,
+    def send(self, send_from=None, to=None, subject=None, contents=None, attachments=None, cc=None, bcc=None,
              preview_only=False, validate_email=True, throw_invalid_exception=False, headers=None):
         """ Use this to send an email with gmail"""
         addresses = self._resolve_addresses(to, cc, bcc, validate_email, throw_invalid_exception)
@@ -108,13 +108,15 @@ class SMTP():
 
         if preview_only:
             return addresses, msg.as_string()
-        return self._attempt_send(addresses['recipients'], msg.as_string())
+        if send_from is None:
+            send_from = self.user
+        return self._attempt_send(send_from, addresses['recipients'], msg.as_string())
 
-    def _attempt_send(self, recipients, msg_string):
+    def _attempt_send(self, send_from, recipients, msg_string):
         attempts = 0
         while attempts < 3:
             try:
-                result = self.smtp.sendmail(self.user, recipients, msg_string)
+                result = self.smtp.sendmail(send_from, recipients, msg_string)
                 self.log.info('Message sent to %s', recipients)
                 self.num_mail_sent += 1
                 return result
